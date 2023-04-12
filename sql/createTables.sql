@@ -16,8 +16,6 @@ CREATE TABLE IF NOT EXISTS developer_info (
 	"developerId" INTEGER UNIQUE NOT NULL,
 
 	FOREIGN KEY ("developerId") REFERENCES developers(id) 
-   ON DELETE CASCADE
-
 );
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -32,6 +30,13 @@ CREATE TABLE IF NOT EXISTS projects (
 	"developerId" INTEGER,
 
 	FOREIGN KEY ("developerId") REFERENCES developers(id)
-	ON DELETE CASCADE
-   
+);
+
+CREATE TABLE IF NOT EXISTS projects_technologies(
+	"id" SERIAL PRIMARY KEY,
+	"addedln" DATE NOT NULL,
+	"technologyId" INTEGER NOT NULL,
+	"projectId" INTEGER NOT NULL,
+	FOREIGN KEY ("technologyId") REFERENCES technologies(id),
+	FOREIGN KEY ("projectId") REFERENCES projects(id)
 );

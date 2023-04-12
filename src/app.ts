@@ -1,14 +1,16 @@
 import express, { Application } from "express";
 import "dotenv/config";
 import { startDatabase } from "./dataBaseDebug";
+import { createUserDevelopers, getDevelopersById } from "./logics/developers";
+import { checkingExistenceOfId, checkNameDuplicate } from "./middlewares/developers";
 
 const app: Application = express();
 
 app.use(express.json())
 
-app.post('/developers')
+app.post('/developers',checkNameDuplicate,createUserDevelopers)
 
-app.get('/developers/:id')
+app.get('/developers/:id',checkingExistenceOfId ,getDevelopersById)
 
 app.patch('/developers/:id')
 
