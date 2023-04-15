@@ -51,23 +51,25 @@ const getDevelopersById = async (
    const queryString: string = `
 
    SELECT 
-      "dev"."id" AS "developerId",
-      "dev"."name" AS "developerName",
-      "dev"."email" AS "developerEmail",
-      "dev_info"."developerSince" AS "developerInfoDeveloperSince", 
-      "dev_info"."preferredOS" AS "developerInfoPreferredOS"
+      dev."id" AS "developerId",
+      dev."name" AS "developerName",
+      dev."email" AS "developerEmail",
+      dev_info."developerSince" AS "developerInfoDeveloperSince", 
+      dev_info."preferredOS" AS "developerInfoPreferredOS"
 
    FROM 
-      developers "dev"
+      developers dev
 
    LEFT JOIN 
-      developer_info "dev_info" ON "dev_info"."developerId" = "dev".id 
+      developer_info dev_info 
+      ON dev_info."developerId" = dev.id 
 
    LEFT JOIN 
-      projects "pj" ON  "pj"."developerId" = "dev".id
+      projects pj 
+      ON  pj."developerId" = dev.id
 
    WHERE 
-      "dev".id  = $1;
+      dev.id  = $1;
    `;
 
    const queryConfig: QueryConfig = {
@@ -108,8 +110,7 @@ const updateDevelopersById = async (
       RETURNING *;
       `,
       queryParamKeys,
-      queryParamValues
-   );
+      queryParamValues);
 
    const queryConfig: QueryConfig = {
       text: queryString,

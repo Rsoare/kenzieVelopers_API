@@ -100,7 +100,7 @@ const checkDevelopersInfosDuplicateId = async (
 
    if (queryResult.rowCount > 0) {
       return res.status(409).json({
-         message: " Developers infos already exists",
+         message: "Developer infos already exists",
       });
    }
 
@@ -120,7 +120,8 @@ const CheckingPreferredOsExistence = async (
 
    if (!checkingPreferredOS) {
       return res.status(400).json({
-         message: " Invalid preferredOS Please enter a valid OS ('Windows','Linux','MacOS')",
+         message: "Invalid OS option.",
+         options: ["Windows", "Linux", "MacOS"]
       });
    }
 
