@@ -23,4 +23,17 @@ interface IGetProjects {
    technologyId: number | null,
    technologyName: string | number
 }
-export {Iprojects,IprojectsRequest,IGetProjects}
+
+type IprojectsTechnologies = Omit<IGetProjects, 'projectDeveloperId' >
+
+interface Itechnologies {
+   id:number
+   name:string
+}
+interface Iprojects_technologies {
+   id:number
+   addedln:Date
+   technologyId:number
+   projectId:number
+}
+export {Iprojects,IprojectsRequest,IGetProjects,IprojectsTechnologies,Itechnologies, Iprojects_technologies }

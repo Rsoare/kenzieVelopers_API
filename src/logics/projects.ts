@@ -1,6 +1,6 @@
 import { Request, Response, query } from "express";
-import { IGetProjects, Iprojects, IprojectsRequest } from "../interfaces/projects";
-import format from "pg-format";
+import { IGetProjects, Iprojects, IprojectsRequest, IprojectsTechnologies, Iprojects_technologies, Itechnologies } from "../interfaces/projects";
+import format, { string } from "pg-format";
 import { QueryConfig, QueryResult } from "pg";
 import { client } from "../dataBaseDebug";
 
@@ -58,7 +58,7 @@ const getProjectsById = async (
       projects_technologies pj_tech
       ON pj_tech."projectId" = pj.id 
 
-   LEFT JOIN 
+   LEFT JOIN                                             
       technologies tech
       ON tech.id = pj_tech."technologyId" 
       
@@ -136,4 +136,138 @@ const deleteProjectById = async (req:Request,res:Response):Promise<Response> => 
 
    return res.status(204).send()
 }
-export { createProjects, getProjectsById,updateProjectById,deleteProjectById };
+
+const addTechnologiesForProject = async(req:Request,res:Response):Promise<Response> =>{
+
+   const paramsBody:string = req.body
+
+   const projectId:number = parseInt(req.params.id)
+
+   const paramsBodyValues = Object.values(paramsBody)
+
+   const date = new Date
+
+   const queryStringSelect:string = `
+      SELECT 
+         technologies.id 
+
+      FROM 
+         technologies
+         
+      WHERE 
+         name = $1;
+   `
+   const queryConfigSelect:QueryConfig = {
+      text:queryStringSelect,
+      values:[paramsBodyValues[0]]
+   }
+
+   const queryResultSelect:QueryResult<{id:number}> = await client.query(queryConfigSelect)
+
+   const {id} = queryResultSelect.rows[0]
+
+   const queryStringInsert:string= `
+      INSERT INTO 
+         projects_technologies ("projectId","technologyId","addedln")
+      VALUES 
+         ($1,$2,$3);	
+      
+   `
+   const queryConfigInsert:QueryConfig = {
+      text:queryStringInsert,
+      values:[projectId,id,date]
+   }
+
+   await client.query(queryConfigInsert)
+   
+   const queryString:string = `
+
+      SELECT 
+         pj."id" AS "projectId",
+         pj."name" AS "projectName",
+         pj."description" AS "projectDescription",
+         pj."estimatedTime" AS "projectEstimatedTime",
+         pj."repository" AS "projectRepository",
+         pj."startDate" AS "projectStartDate",
+         pj."endDate" AS "projectEndDate",
+         pj_tech."technologyId", 
+         tech."name" AS "technologyName"  
+
+      FROM 
+         projects pj
+
+      LEFT JOIN 
+         projects_technologies pj_tech
+         ON pj_tech."projectId" = pj.id 
+
+      LEFT JOIN 
+         technologies tech
+         ON tech.id = pj_tech."technologyId"  
+
+      WHERE 
+         pj.id = $1;
+   `
+   const queryConfig:QueryConfig={
+      text:queryString,
+      values:[projectId]
+   }
+   const queryResult:QueryResult<IprojectsTechnologies> = await client.query(queryConfig)
+
+   return res.status(201).json(queryResult.rows[0])
+}  
+
+const deleteTechnologiesById = async (req:Request,res:Response):Promise<Response> => {
+
+   const {id:projectId,name:techName} = req.params
+
+   const queryStringSelect:string= `
+      SELECT 
+         technologies.id 
+
+      FROM 
+         technologies
+         
+      WHERE 
+         name = $1;
+   `
+
+   const queryConfigSelect:QueryConfig ={
+      text:queryStringSelect,
+      values: [techName]
+   }
+
+   const queryResultSelect:QueryResult<{id:number}> = await client.query(queryConfigSelect)
+
+   const {id} = queryResultSelect.rows[0]
+
+   const queryString:string= `
+      DELETE FROM 
+         projects_technologies 
+
+      WHERE 
+      "technologyId" = $1 AND "projectId" = $2
+
+      RETURNING *;
+   `
+
+   const queryConfig:QueryConfig ={
+      text:queryString,
+      values: [id,projectId]
+   }
+
+   const queryResult: QueryResult< Iprojects_technologies> = await client.query(queryConfig);
+
+   if (queryResult.rowCount == 0) {
+      return res.status(400).json({
+         message: "Technology not related to the project."
+      });
+   }
+
+   return res.status(204).send()
+}
+export{ createProjects, 
+         getProjectsById,
+         updateProjectById,
+         deleteProjectById,
+         addTechnologiesForProject,
+         deleteTechnologiesById };

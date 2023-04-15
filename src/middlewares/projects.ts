@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { QueryConfig, QueryResult } from "pg";
 import { Idevelopers } from "../interfaces/developers";
 import { client } from "../dataBaseDebug";
-import { Iprojects } from "../interfaces/projects";
+import { Iprojects, Itechnologies } from "../interfaces/projects";
 
 const checkingProjectDeveloper = async (
    req: Request,
@@ -74,7 +74,154 @@ const checkingExistenceProjectOfId = async (
 
    return next();
 };
+const checkingExistenceTechnologies = async (
+   req: Request,
+   res: Response,
+   next: NextFunction
+): Promise<Response | void> => {
+   
+   let techName = req.body.name
+   
+   if (techName == undefined || techName == null) {
+      techName = req.params.name
+   }
 
+   const queryString: string = `
+   SELECT
+      *
+
+   FROM 
+      technologies
+
+   WHERE 
+      name = $1
+   `;
+
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [techName],
+   };
+
+   const queryResult: QueryResult<Itechnologies> = await client.query(queryConfig);
+
+   if (queryResult.rowCount == 0) {
+      return res.status(400).json({
+         message: "Technology not supported.",
+         options: [
+            "JavaScript",
+            "Python",
+            "React",
+            "Express.js",
+            "HTML",
+            "CSS",
+            "Django",
+            "PostgreSQL",
+            "MongoDB"
+         ],
+      });
+   }
+
+   return next();
+};
+const checkingDuplicateTechnologies = async (
+   req: Request,
+   res: Response,
+   next: NextFunction
+): Promise<Response | void> => {
+
+   let techName =req.body.name
+   
+   const queryString: string = `
+
+      SELECT 
+         pj."id" AS "projectId",
+         pj."name" AS "projectName",
+         pj."developerId" AS "projectDeveloperId",
+         pj_tech."technologyId", 
+         tech."name" AS "technologyName"  
+      FROM 
+         projects pj
+      LEFT JOIN 
+         projects_technologies pj_tech
+         ON pj_tech."projectId" = pj.id 
+      LEFT JOIN 
+         technologies tech
+         ON tech.id = pj_tech."technologyId"
+      WHERE 
+         tech.name = $1;
+   `;
+
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [techName],
+   };
+
+   const queryResult: QueryResult<Itechnologies> = await client.query(queryConfig);
+
+   if (queryResult.rowCount > 0) {
+      return res.status(409).json({
+         message: "This technology is already associated with the project"
+      });
+   }
+
+   return next();
+};
+const checkingAssociatedParameters = async (
+   req: Request,
+   res: Response,
+   next: NextFunction
+): Promise<Response | void> => {
+
+   const {id:projectId,name:techName} = req.params
+
+   const queryStringSelect:string= `
+   SELECT 
+      technologies.id 
+
+   FROM 
+      technologies
+      
+   WHERE 
+      name = $1;
+`
+const queryConfigSelect:QueryConfig ={
+   text:queryStringSelect,
+   values: [techName]
+}
+
+   const queryResultSelect:QueryResult<{id:number}> = await client.query(queryConfigSelect)
+
+   const {id} = queryResultSelect.rows[0]
+
+   const queryString: string = `
+
+      SELECT
+         *
+
+      FROM 
+         projects_technologies 
+
+      WHERE 
+         "technologyId" = $1 AND "projectId" = $2
+   `;
+
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [id,projectId],
+   };
+
+   const queryResult: QueryResult<Itechnologies> = await client.query(queryConfig);
+
+   if (queryResult.rowCount > 0) {
+      return res.status(400).json({
+         message: "Technology not related to the project."
+      });
+   }
+
+   return next();
+};
 
 export { checkingProjectDeveloper, 
-         checkingExistenceProjectOfId };
+         checkingExistenceProjectOfId,
+         checkingExistenceTechnologies,
+         checkingDuplicateTechnologies };
