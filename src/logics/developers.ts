@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { client } from "../database";
 import {
    IGetDevelopers,
    Idevelopers,
@@ -9,7 +10,7 @@ import {
 } from "../interfaces/developers";
 import format from "pg-format";
 import { QueryConfig, QueryResult } from "pg";
-import { client } from "../dataBaseDebug";
+
 
 const createUserDevelopers = async (
    req: Request,
@@ -61,12 +62,8 @@ const getDevelopersById = async (
       developers dev
 
    LEFT JOIN 
-      developer_info dev_info 
+      developer_infos dev_info 
       ON dev_info."developerId" = dev.id 
-
-   LEFT JOIN 
-      projects pj 
-      ON  pj."developerId" = dev.id
 
    WHERE 
       dev.id  = $1;
@@ -88,8 +85,7 @@ const updateDevelopersById = async (
    req: Request,
    res: Response
 ): Promise<Response> => {
-
-   const developerId:number = parseInt(req.params.id)
+   const developerId: number = parseInt(req.params.id);
 
    const bodyParams: IdevelopersRequest = req.body;
 
@@ -110,50 +106,51 @@ const updateDevelopersById = async (
       RETURNING *;
       `,
       queryParamKeys,
-      queryParamValues);
+      queryParamValues
+   );
 
    const queryConfig: QueryConfig = {
       text: queryString,
       values: [developerId],
    };
 
-   const queryResult: QueryResult<IdevelopersUpdate> = await client.query(queryConfig);
+   const queryResult: QueryResult<IdevelopersUpdate> = await client.query(
+      queryConfig
+   );
 
    return res.status(200).json(queryResult.rows[0]);
 };
 
+const deleteDevelopersById = async (
+   req: Request,
+   res: Response
+): Promise<Response> => {
+   const developerId: number = parseInt(req.params.id);
 
-const deleteDevelopersById = async (req:Request,res:Response):Promise<Response> => {
-
-   const developerId:number = parseInt(req.params.id)
-
-   const queryString:string=`
+   const queryString: string = `
 
    DELETE FROM 
       developers 
 
    WHERE "id" = $1;
-   `
+   `;
 
-   const queryConfig:QueryConfig = {
-      text:queryString,
-      values:[developerId]
-   }
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [developerId],
+   };
 
-   await client.query(queryConfig)
+   await client.query(queryConfig);
 
-   return res.status(204).send()
-}
-
+   return res.status(204).send();
+};
 
 const createDevelopersInfos = async (
    req: Request,
    res: Response
 ): Promise<Response> => {
-
-   const developerData: IdevelopersInfosRequest= req.body;
-         developerData.developerId = parseInt(req.params.id)
-
+   const developerData: IdevelopersInfosRequest = req.body;
+   developerData.developerId = parseInt(req.params.id);
 
    const queryParamKeys = Object.keys(developerData);
    const queryParamValues = Object.values(developerData);
@@ -162,7 +159,7 @@ const createDevelopersInfos = async (
       `
 
       INSERT INTO 
-         developer_info(%I)
+         developer_infos(%I)
 
       VALUES
          (%L)
@@ -180,9 +177,10 @@ const createDevelopersInfos = async (
    return res.status(201).json(queryResult.rows[0]);
 };
 
-export { createUserDevelopers, 
-         getDevelopersById, 
-         updateDevelopersById,
-         deleteDevelopersById,
-         createDevelopersInfos
-      };
+export {
+   createUserDevelopers,
+   getDevelopersById,
+   updateDevelopersById,
+   deleteDevelopersById,
+   createDevelopersInfos,
+};

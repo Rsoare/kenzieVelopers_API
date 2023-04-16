@@ -1,6 +1,5 @@
 import express, { Application } from "express";
 import "dotenv/config";
-import { startDatabase } from "./dataBaseDebug";
 
 import {
    createDevelopersInfos,
@@ -32,6 +31,7 @@ import {
    checkingExistenceTechnologies,
    checkingProjectDeveloper,
 } from "./middlewares/projects";
+import { startDatabase } from "./database";
 
 const app: Application = express();
 
@@ -41,7 +41,8 @@ app.post("/developers", checkNameDuplicate, createUserDevelopers);
 
 app.get("/developers/:id", checkingExistenceOfId, getDevelopersById);
 
-app.patch("/developers/:id",
+app.patch(
+   "/developers/:id",
    checkingExistenceOfId,
    checkNameDuplicate,
    updateDevelopersById
@@ -49,7 +50,8 @@ app.patch("/developers/:id",
 
 app.delete("/developers/:id", checkingExistenceOfId, deleteDevelopersById);
 
-app.post("/developers/:id/infos",
+app.post(
+   "/developers/:id/infos",
    checkingExistenceOfId,
    checkDevelopersInfosDuplicateId,
    CheckingPreferredOsExistence,
@@ -61,26 +63,30 @@ app.post("/projects", checkingProjectDeveloper, createProjects);
 
 app.get("/projects/:id", checkingExistenceProjectOfId, getProjectsById);
 
-app.patch("/projects/:id",
+app.patch(
+   "/projects/:id",
    checkingExistenceProjectOfId,
    checkingProjectDeveloper,
    updateProjectById
 );
 app.delete("/projects/:id", checkingExistenceProjectOfId, deleteProjectById);
 
-app.post("/projects/:id/technologies",
+app.post(
+   "/projects/:id/technologies",
    checkingExistenceProjectOfId,
    checkingExistenceTechnologies,
    checkingDuplicateTechnologies,
-   addTechnologiesForProject,
-   );
+   addTechnologiesForProject
+);
 
-app.delete("/projects/:id/technologies/:name",
+app.delete(
+   "/projects/:id/technologies/:name",
    checkingExistenceProjectOfId,
    checkingExistenceTechnologies,
-   deleteTechnologiesById );
+   deleteTechnologiesById
+);
 
-app.listen(3000, async () => {
+app.listen(3000,async () => {
    await startDatabase();
    console.log("Server started on port 3000");
 });

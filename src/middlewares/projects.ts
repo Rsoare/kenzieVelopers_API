@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { QueryConfig, QueryResult } from "pg";
 import { Idevelopers } from "../interfaces/developers";
-import { client } from "../dataBaseDebug";
 import { Iprojects, Itechnologies } from "../interfaces/projects";
+import { client } from "../database";
 
 const checkingProjectDeveloper = async (
    req: Request,
@@ -79,11 +79,10 @@ const checkingExistenceTechnologies = async (
    res: Response,
    next: NextFunction
 ): Promise<Response | void> => {
-   
-   let techName = req.body.name
-   
+   let techName = req.body.name;
+
    if (techName == undefined || techName == null) {
-      techName = req.params.name
+      techName = req.params.name;
    }
 
    const queryString: string = `
@@ -102,7 +101,9 @@ const checkingExistenceTechnologies = async (
       values: [techName],
    };
 
-   const queryResult: QueryResult<Itechnologies> = await client.query(queryConfig);
+   const queryResult: QueryResult<Itechnologies> = await client.query(
+      queryConfig
+   );
 
    if (queryResult.rowCount == 0) {
       return res.status(400).json({
@@ -116,7 +117,7 @@ const checkingExistenceTechnologies = async (
             "CSS",
             "Django",
             "PostgreSQL",
-            "MongoDB"
+            "MongoDB",
          ],
       });
    }
@@ -128,9 +129,8 @@ const checkingDuplicateTechnologies = async (
    res: Response,
    next: NextFunction
 ): Promise<Response | void> => {
+   let techName = req.body.name;
 
-   let techName =req.body.name
-   
    const queryString: string = `
 
       SELECT 
@@ -156,72 +156,23 @@ const checkingDuplicateTechnologies = async (
       values: [techName],
    };
 
-   const queryResult: QueryResult<Itechnologies> = await client.query(queryConfig);
+   const queryResult: QueryResult<Itechnologies> = await client.query(
+      queryConfig
+   );
 
    if (queryResult.rowCount > 0) {
       return res.status(409).json({
-         message: "This technology is already associated with the project"
-      });
-   }
-
-   return next();
-};
-const checkingAssociatedParameters = async (
-   req: Request,
-   res: Response,
-   next: NextFunction
-): Promise<Response | void> => {
-
-   const {id:projectId,name:techName} = req.params
-
-   const queryStringSelect:string= `
-   SELECT 
-      technologies.id 
-
-   FROM 
-      technologies
-      
-   WHERE 
-      name = $1;
-`
-const queryConfigSelect:QueryConfig ={
-   text:queryStringSelect,
-   values: [techName]
-}
-
-   const queryResultSelect:QueryResult<{id:number}> = await client.query(queryConfigSelect)
-
-   const {id} = queryResultSelect.rows[0]
-
-   const queryString: string = `
-
-      SELECT
-         *
-
-      FROM 
-         projects_technologies 
-
-      WHERE 
-         "technologyId" = $1 AND "projectId" = $2
-   `;
-
-   const queryConfig: QueryConfig = {
-      text: queryString,
-      values: [id,projectId],
-   };
-
-   const queryResult: QueryResult<Itechnologies> = await client.query(queryConfig);
-
-   if (queryResult.rowCount > 0) {
-      return res.status(400).json({
-         message: "Technology not related to the project."
+         message: "This technology is already associated with the project",
       });
    }
 
    return next();
 };
 
-export { checkingProjectDeveloper, 
-         checkingExistenceProjectOfId,
-         checkingExistenceTechnologies,
-         checkingDuplicateTechnologies };
+
+export {
+   checkingProjectDeveloper,
+   checkingExistenceProjectOfId,
+   checkingExistenceTechnologies,
+   checkingDuplicateTechnologies,
+};

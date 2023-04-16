@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { QueryConfig, QueryResult } from "pg";
-import { Idevelopers, IpreferredOS, } from "../interfaces/developers";
-import { client } from "../dataBaseDebug";
+import { Idevelopers } from "../interfaces/developers";
+import { client } from "../database";
+
 
 const checkNameDuplicate = async (
    req: Request,
@@ -12,15 +13,15 @@ const checkNameDuplicate = async (
 
    const queryString: string = `
 
-         SELECT 
-            * 
+      SELECT 
+         * 
 
-         FROM 
+      FROM 
          developers 
          
-         WHERE 
+      WHERE 
          email = $1;
-      `;
+   `;
 
    const queryConfig: QueryConfig = {
       text: queryString,
@@ -50,8 +51,10 @@ const checkingExistenceOfId = async (
    const queryString: string = `
       SELECT
          *
+
       FROM
          developers
+
       WHERE
          id = $1
    `;
@@ -78,14 +81,15 @@ const checkDevelopersInfosDuplicateId = async (
    res: Response,
    next: NextFunction
 ): Promise<Response | void> => {
-
    const id: number = parseInt(req.params.id);
 
    const queryString: string = `
       SELECT
          *
+
       FROM
-         developer_info
+         developer_infos
+
       WHERE
          "developerId" = $1;
    `;
@@ -112,23 +116,24 @@ const CheckingPreferredOsExistence = async (
    res: Response,
    next: NextFunction
 ): Promise<Response | void> => {
+   const { preferredOS } = req.body;
+   const operationalSystems = ["Windows", "Linux", "MacOS"];
 
-   const {preferredOS} = req.body
-   const operationalSystems = ['Windows','Linux','MacOS']
-
-   const checkingPreferredOS = operationalSystems.includes(preferredOS)
+   const checkingPreferredOS = operationalSystems.includes(preferredOS);
 
    if (!checkingPreferredOS) {
       return res.status(400).json({
          message: "Invalid OS option.",
-         options: ["Windows", "Linux", "MacOS"]
+         options: ["Windows", "Linux", "MacOS"],
       });
    }
 
    return next();
 };
 
-export { checkNameDuplicate, 
-         checkingExistenceOfId,
-         checkDevelopersInfosDuplicateId,
-         CheckingPreferredOsExistence };
+export {
+   checkNameDuplicate,
+   checkingExistenceOfId,
+   checkDevelopersInfosDuplicateId,
+   CheckingPreferredOsExistence,
+};

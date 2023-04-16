@@ -1,8 +1,14 @@
-import { Request, Response, query } from "express";
-import { IGetProjects, Iprojects, IprojectsRequest, IprojectsTechnologies, Iprojects_technologies, Itechnologies } from "../interfaces/projects";
-import format, { string } from "pg-format";
+import { Request, Response } from "express";
+import {
+   IGetProjects,
+   Iprojects,
+   IprojectsRequest,
+   IprojectsTechnologies,
+   Iprojects_technologies,
+} from "../interfaces/projects";
+import format from "pg-format";
 import { QueryConfig, QueryResult } from "pg";
-import { client } from "../dataBaseDebug";
+import { client } from "../database";
 
 const createProjects = async (
    req: Request,
@@ -75,22 +81,22 @@ const getProjectsById = async (
       queryConfig
    );
 
-   return res.status(200).json(queryResult.rows[0]);
+   return res.status(200).json(queryResult.rows);
 };
 
 const updateProjectById = async (
    req: Request,
    res: Response
 ): Promise<Response> => {
+   const projectId: number = parseInt(req.params.id);
 
-   const projectId:number = parseInt(req.params.id) 
+   const bodyParams: Partial<IprojectsRequest> = req.body;
 
-   const bodyParams:Partial<IprojectsRequest> = req.body
+   const queryParamKeys = Object.keys(bodyParams);
+   const queryParamValues = Object.values(bodyParams);
 
-   const queryParamKeys = Object.keys(bodyParams)
-   const queryParamValues = Object.values(bodyParams)
-
-   const queryString:string = format(`
+   const queryString: string = format(
+      `
 
       UPDATE
          projects
@@ -102,52 +108,56 @@ const updateProjectById = async (
 
       RETURNING *;
    `,
-   queryParamKeys,
-   queryParamValues)
+      queryParamKeys,
+      queryParamValues
+   );
 
-   const queryConfig:QueryConfig= {
-      text:queryString,
-      values:[projectId]
-   }
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [projectId],
+   };
 
-   const queryResult:QueryResult<Iprojects> = await client.query(queryConfig)
+   const queryResult: QueryResult<Iprojects> = await client.query(queryConfig);
 
    return res.status(200).json(queryResult.rows[0]);
-
 };
 
-const deleteProjectById = async (req:Request,res:Response):Promise<Response> => {
+const deleteProjectById = async (
+   req: Request,
+   res: Response
+): Promise<Response> => {
+   const projectId: number = parseInt(req.params.id);
 
-   const projectId:number = parseInt(req.params.id)
-
-   const queryString:string= `
+   const queryString: string = `
       DELETE FROM 
          projects
       
       WHERE id = $1
-   `
+   `;
 
-   const queryConfig:QueryConfig ={
-      text:queryString,
-      values: [projectId]
-   }
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [projectId],
+   };
 
-   await client.query(queryConfig)
+   await client.query(queryConfig);
 
-   return res.status(204).send()
-}
+   return res.status(204).send();
+};
 
-const addTechnologiesForProject = async(req:Request,res:Response):Promise<Response> =>{
+const addTechnologiesForProject = async (
+   req: Request,
+   res: Response
+): Promise<Response> => {
+   const paramsBody: string = req.body;
 
-   const paramsBody:string = req.body
+   const projectId: number = parseInt(req.params.id);
 
-   const projectId:number = parseInt(req.params.id)
+   const paramsBodyValues = Object.values(paramsBody);
 
-   const paramsBodyValues = Object.values(paramsBody)
+   const date = new Date();
 
-   const date = new Date
-
-   const queryStringSelect:string = `
+   const queryStringSelect: string = `
       SELECT 
          technologies.id 
 
@@ -156,31 +166,33 @@ const addTechnologiesForProject = async(req:Request,res:Response):Promise<Respon
          
       WHERE 
          name = $1;
-   `
-   const queryConfigSelect:QueryConfig = {
-      text:queryStringSelect,
-      values:[paramsBodyValues[0]]
-   }
+   `;
+   const queryConfigSelect: QueryConfig = {
+      text: queryStringSelect,
+      values: [paramsBodyValues[0]],
+   };
 
-   const queryResultSelect:QueryResult<{id:number}> = await client.query(queryConfigSelect)
+   const queryResultSelect: QueryResult<{ id: number }> = await client.query(
+      queryConfigSelect
+   );
 
-   const {id} = queryResultSelect.rows[0]
+   const { id } = queryResultSelect.rows[0];
 
-   const queryStringInsert:string= `
+   const queryStringInsert: string = `
       INSERT INTO 
          projects_technologies ("projectId","technologyId","addedln")
       VALUES 
          ($1,$2,$3);	
       
-   `
-   const queryConfigInsert:QueryConfig = {
-      text:queryStringInsert,
-      values:[projectId,id,date]
-   }
+   `;
+   const queryConfigInsert: QueryConfig = {
+      text: queryStringInsert,
+      values: [projectId, id, date],
+   };
 
-   await client.query(queryConfigInsert)
-   
-   const queryString:string = `
+   await client.query(queryConfigInsert);
+
+   const queryString: string = `
 
       SELECT 
          pj."id" AS "projectId",
@@ -206,68 +218,79 @@ const addTechnologiesForProject = async(req:Request,res:Response):Promise<Respon
 
       WHERE 
          pj.id = $1;
-   `
-   const queryConfig:QueryConfig={
-      text:queryString,
-      values:[projectId]
-   }
-   const queryResult:QueryResult<IprojectsTechnologies> = await client.query(queryConfig)
+   `;
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [projectId],
+   };
+   const queryResult: QueryResult<IprojectsTechnologies> = await client.query(
+      queryConfig
+   );
 
-   return res.status(201).json(queryResult.rows[0])
-}  
+   return res.status(201).json(queryResult.rows[0]);
+};
 
-const deleteTechnologiesById = async (req:Request,res:Response):Promise<Response> => {
+const deleteTechnologiesById = async (
+   req: Request,
+   res: Response
+): Promise<Response> => {
+   const { id: projectId, name: techName } = req.params;
 
-   const {id:projectId,name:techName} = req.params
-
-   const queryStringSelect:string= `
+   const queryStringSelect: string = `
       SELECT 
          technologies.id 
 
       FROM 
          technologies
          
+         
       WHERE 
          name = $1;
-   `
+   `;
 
-   const queryConfigSelect:QueryConfig ={
-      text:queryStringSelect,
-      values: [techName]
-   }
+   const queryConfigSelect: QueryConfig = {
+      text: queryStringSelect,
+      values: [techName],
+   };
 
-   const queryResultSelect:QueryResult<{id:number}> = await client.query(queryConfigSelect)
+   const queryResultSelect: QueryResult<{ id: number }> = await client.query(
+      queryConfigSelect
+   );
 
-   const {id} = queryResultSelect.rows[0]
+   const { id } = queryResultSelect.rows[0];
 
-   const queryString:string= `
+   const queryString: string = `
       DELETE FROM 
-         projects_technologies 
+         projects_technologies
 
       WHERE 
-      "technologyId" = $1 AND "projectId" = $2
+         "technologyId" = $1 AND "projectId" = $2
 
       RETURNING *;
-   `
+   `;
 
-   const queryConfig:QueryConfig ={
-      text:queryString,
-      values: [id,projectId]
-   }
+   const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [id, projectId],
+   };
 
-   const queryResult: QueryResult< Iprojects_technologies> = await client.query(queryConfig);
+   const queryResult: QueryResult<Iprojects_technologies> = await client.query(
+      queryConfig
+   );
 
    if (queryResult.rowCount == 0) {
       return res.status(400).json({
-         message: "Technology not related to the project."
+         message: "Technology not related to the project.",
       });
    }
 
-   return res.status(204).send()
-}
-export{ createProjects, 
-         getProjectsById,
-         updateProjectById,
-         deleteProjectById,
-         addTechnologiesForProject,
-         deleteTechnologiesById };
+   return res.status(204).send();
+};
+export {
+   createProjects,
+   getProjectsById,
+   updateProjectById,
+   deleteProjectById,
+   addTechnologiesForProject,
+   deleteTechnologiesById,
+};
