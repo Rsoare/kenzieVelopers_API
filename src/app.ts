@@ -86,8 +86,4 @@ app.delete(
    deleteTechnologiesById
 );
 
-app.listen(3000,async () => {
-   await startDatabase();
-   console.log("Server started on port 3000");
-});
 export default app;
